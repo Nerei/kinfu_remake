@@ -14,6 +14,12 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 include(cmake/Utils.cmake)
 include(cmake/Targets.cmake)
 
+# -- [ this option causes problems for some reason, so turn it off before searching for CUDA
+if(MSVC)
+	# Setting this to true brakes Visual Studio builds.
+	set(CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE OFF CACHE BOOL "CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE")
+endif()
+
 # ---[ find dependencies
 find_package(OpenCV 2.4.8 REQUIRED COMPONENTS core viz highgui)
 find_package(CUDA 5.0 REQUIRED)
