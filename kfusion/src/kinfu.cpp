@@ -121,7 +121,7 @@ void kfusion::KinFu::allocate_buffers()
     points_.create(params_.rows, params_.cols);
 }
 
-void kfusion::KinFu::reset()
+void kfusion::KinFu::reset(Affine3f initialPose)
 {
     if (frame_counter_)
         cout << "Reset" << endl;
@@ -129,7 +129,7 @@ void kfusion::KinFu::reset()
     frame_counter_ = 0;
     poses_.clear();
     poses_.reserve(30000);
-    poses_.push_back(Affine3f::Identity());
+    poses_.push_back(initialPose);
     volume_->clear();
 }
 
@@ -277,6 +277,39 @@ void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int f
         DeviceArray2D<RGB> i2(p.rows, p.cols, image.ptr() + p.cols, image.step());
 
         cuda::renderImage(PASS1, normals_, params_.intr, params_.light_pose, i1);
+        cuda::renderTangentColors(normals_, i2);
+    }
+#undef PASS1
+}
+
+
+void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, Intr cameraIntrinsics, cv::Size size, int flag)
+{
+    int rows = size.height;
+    int cols = size.width;
+    image.create(rows, flag != 3 ? cols : cols * 2);
+    depths_.create(rows, cols);
+    normals_.create(rows, cols);
+    points_.create(rows, cols);
+
+#if defined USE_DEPTH
+    #define PASS1 depths_
+#else
+    #define PASS1 points_
+#endif
+
+    volume_->raycast(pose, cameraIntrinsics, PASS1, normals_);
+
+    if (flag < 1 || flag > 3)
+        cuda::renderImage(PASS1, normals_, cameraIntrinsics, params_.light_pose, image);
+    else if (flag == 2)
+        cuda::renderTangentColors(normals_, image);
+    else /* if (flag == 3) */
+    {
+        DeviceArray2D<RGB> i1(rows, cols, image.ptr(), image.step());
+        DeviceArray2D<RGB> i2(rows, cols, image.ptr() + cols, image.step());
+
+        cuda::renderImage(PASS1, normals_, cameraIntrinsics, params_.light_pose, i1);
         cuda::renderTangentColors(normals_, i2);
     }
 #undef PASS1

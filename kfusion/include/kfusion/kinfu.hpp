@@ -56,6 +56,13 @@ namespace kfusion
     public:        
         typedef cv::Ptr<KinFu> Ptr;
 
+        enum RenderMode
+        {
+          Scene = 0,
+          Normals = 2,
+          SceneAndNormals = 3
+        };
+
         KinFu(const KinFuParams& params);
 
         const KinFuParams& params() const;
@@ -67,12 +74,13 @@ namespace kfusion
         const cuda::ProjectiveICP& icp() const;
         cuda::ProjectiveICP& icp();
 
-        void reset();
+        void reset(Affine3f initialPose = Affine3f::Identity());
 
         bool operator()(const cuda::Depth& dpeth, const cuda::Image& image = cuda::Image());
 
         void renderImage(cuda::Image& image, int flags = 0);
         void renderImage(cuda::Image& image, const Affine3f& pose, int flags = 0);
+        void renderImage(cuda::Image& image, const Affine3f& pose, Intr cameraIntrinsics, cv::Size size, int flags = 0);
 
         Affine3f getCameraPose (int time = -1) const;
     private:
