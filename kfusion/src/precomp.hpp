@@ -3,6 +3,7 @@
 #include <kfusion/types.hpp>
 #include <kfusion/kinfu.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
+#include <kfusion/cuda/color_volume.hpp>
 #include <kfusion/cuda/imgproc.hpp>
 #include <kfusion/cuda/projective_icp.hpp>
 //#include <opencv2/calib3d/calib3d.hpp>

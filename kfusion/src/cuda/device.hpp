@@ -27,6 +27,29 @@ __kf_device__ kfusion::device::TsdfVolume::elem_type* kfusion::device::TsdfVolum
 { return ptr + dims.x * dims.y; }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// ColorVolume
+
+//__kf_device__
+//kfusion::device::TsdfVolume::TsdfVolume(elem_type* _data, int3 _dims, float3 _voxel_size, float _trunc_dist, int _max_weight)
+//  : data(_data), dims(_dims), voxel_size(_voxel_size), trunc_dist(_trunc_dist), max_weight(_max_weight) {}
+
+//__kf_device__
+//kfusion::device::TsdfVolume::TsdfVolume(const TsdfVolume& other)
+//  : data(other.data), dims(other.dims), voxel_size(other.voxel_size), trunc_dist(other.trunc_dist), max_weight(other.max_weight) {}
+
+__kf_device__ kfusion::device::ColorVolume::elem_type* kfusion::device::ColorVolume::operator()(int x, int y, int z)
+{ return data + x + y*dims.x + z*dims.y*dims.x; }
+
+__kf_device__ const kfusion::device::ColorVolume::elem_type* kfusion::device::ColorVolume::operator() (int x, int y, int z) const
+{ return data + x + y*dims.x + z*dims.y*dims.x; }
+
+__kf_device__ kfusion::device::ColorVolume::elem_type* kfusion::device::ColorVolume::beg(int x, int y) const
+{ return data + x + dims.x * y; }
+
+__kf_device__ kfusion::device::ColorVolume::elem_type* kfusion::device::ColorVolume::zstep(elem_type *const ptr) const
+{ return ptr + dims.x * dims.y; }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Projector
 
 __kf_device__ float2 kfusion::device::Projector::operator()(const float3& p) const
