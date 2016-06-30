@@ -25,7 +25,7 @@ void kfusion::cuda::TsdfVolume::create(const Vec3i& dims)
 {
     dims_ = dims;
     int voxels_number = dims_[0] * dims_[1] * dims_[2];
-    data_.create(voxels_number * sizeof(int));
+    data_.create(voxels_number * 2 * sizeof(unsigned short));
     setTruncDist(trunc_dist_);
     clear();
 }
@@ -66,7 +66,7 @@ void kfusion::cuda::TsdfVolume::swap(CudaData& data) { data_.swap(data); }
 void kfusion::cuda::TsdfVolume::applyAffine(const Affine3f& affine) { pose_ = affine * pose_; }
 
 void kfusion::cuda::TsdfVolume::clear()
-{ 
+{
     device::Vec3i dims = device_cast<device::Vec3i>(dims_);
     device::Vec3f vsz  = device_cast<device::Vec3f>(getVoxelSize());
 
