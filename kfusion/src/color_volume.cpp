@@ -77,10 +77,12 @@ void kfusion::cuda::ColorVolume::clear()
  * @fn virtual void integrate(const Image& rgb_image, const Affine3f& camera_pose, const Intr& intr)
  * @brief
  * @param[in] rgb_image, the new frame to integrate
+ * @param[in] depth_map, the raycasted depth map
  * @param[in] camera_pose, the current pose of the camera
  * @param[in] intr, the intrinsic parameters of the RGB camera
  */
 void kfusion::cuda::ColorVolume::integrate(const Image& rgb_image,
+                                           const Dists& depth_map,
                                            const Affine3f& camera_pose,
                                            const Intr& intr)
 {
@@ -93,7 +95,7 @@ void kfusion::cuda::ColorVolume::integrate(const Image& rgb_image,
     device::Aff3f aff = device_cast<device::Aff3f>(vol2cam);
 
     device::ColorVolume volume(data_.ptr<uchar4>(), dims, vsz, trunc_dist_, max_weight_);
-    device::integrate(rgb_image, volume, aff, proj);
+    device::integrate(rgb_image, depth_map, volume, aff, proj);
 }
 
 /*

@@ -158,10 +158,11 @@ namespace kfusion
              * @fn virtual void integrate(const Image& rgb_image, const Affine3f& camera_pose, const Intr& intr)
              * @brief
              * @param[in] rgb_image, the new frame to integrate
+             * @param[in] depth_map, the raycasted depth map
              * @param[in] camera_pose, the current pose of the camera
              * @param[in] intr, the intrinsic parameters of the RGB camera
              */
-            virtual void integrate(const Image& rgb_image, const Affine3f& camera_pose, const Intr& intr);
+            virtual void integrate(const Image& rgb_image, const Dists& depth_map, const Affine3f& camera_pose, const Intr& intr);
 
             /**
              * @name swap
