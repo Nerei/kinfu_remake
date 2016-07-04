@@ -15,12 +15,14 @@ namespace kfusion
         typedef unsigned short ushort;
         typedef unsigned char uchar;
 
+        typedef uchar4 Color;
+
         typedef PtrStepSz<ushort> Dists;
         typedef DeviceArray2D<ushort> Depth;
         typedef DeviceArray2D<Normal> Normals;
         typedef DeviceArray2D<Point> Points;
-        typedef PtrStepSz<uchar4> Colors;  // Not sure it's needed
-        typedef DeviceArray2D<uchar4> Image;
+        typedef PtrStepSz<Color> Colors;  // Not sure it's needed
+        typedef DeviceArray2D<Color> Image;
 
         typedef int3   Vec3i;
         typedef float3 Vec3f;
@@ -141,7 +143,7 @@ namespace kfusion
         //color volume functions
         void clear_volume(ColorVolume volume);
         void integrate(const Colors& image, const Dists& depth_map, ColorVolume& volume, const Aff3f& aff, const Projector& proj);
-        void fetchColors(const ColorVolume& volume, const PtrSz<Point>& points, PtrSz<uchar4>& colors);
+        void fetchColors(const ColorVolume& volume, const PtrSz<Point>& points, PtrSz<Color>& colors);
 
         //image proc functions
         void compute_dists(const Depth& depth, Dists dists, float2 f, float2 c);

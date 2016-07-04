@@ -1,6 +1,7 @@
 #include "device.hpp"
 #include "texture_binder.hpp"
 #include "../internal.hpp"
+#include <stdio.h>
 
 using namespace kfusion::device;
 
@@ -62,6 +63,8 @@ namespace kfusion
             {
                 int x = blockIdx.x * blockDim.x + threadIdx.x;
                 int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+                printf("integrate");
 
                 if (x >= volume.dims.x || y >= volume.dims.y)
                     return;
@@ -163,26 +166,46 @@ namespace kfusion
         {
             int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
+            printf ("fetchColors_kernel \n");
+/*
             if (idx < points.size)
             {
+                printf("idx");
                 int3 v;
                 float3 p = *(const float3 *) (points.data + idx);
-                v.x = __float2int_rd(
-                    p.x / cell_size.x);        // round to negative infinity
+                v.x = __float2int_rd(p.x / cell_size.x);        // round to negative infinity
                 v.y = __float2int_rd(p.y / cell_size.y);
                 v.z = __float2int_rd(p.z / cell_size.z);
 
-                uchar4 rgbw = *volume(v.x, v.y, v.z);
-                colors[idx] = make_uchar4(rgbw.z, rgbw.y, rgbw.x, 0); //bgra
+                //uchar4 rgbw = *volume(v.x, v.y, v.z);
+                uchar4 *pix = colors.data;
+                if (pix == NULL) {
+                    printf ("null\n");
+                }
+                //pix[idx] = rgbw; //bgra
+
+                //uchar4 rgbw = gmem::LdCs(volume(v.x, v.y, v.z));
+                //gmem::StCs(rgbw, colors.data + idx);
+
+                // DEBUG PURPOSE
+                //colors[idx] = make_uchar4(255, 0, 0, 0); //bgra
             }
+            */
         }
     }
 }
 
 void
-kfusion::device::fetchColors(const ColorVolume& volume, const PtrSz<Point>& points, PtrSz<uchar4>& colors)
+kfusion::device::fetchColors(const ColorVolume& volume, const PtrSz<Point>& points, PtrSz<Color>& colors)
 {
     const int block = 256;
+
+    // DEBUG PURPOSE
+    printf("[device::fetchColors] Debug: points.size = %d  colors.size = %d", points.size, colors.size);
+
+    if (points.size != colors.size)
+        return;
+
     float3 cell_size = make_float3 (volume.voxel_size.x, volume.voxel_size.y, volume.voxel_size.z);
     fetchColors_kernel<<<divUp (points.size, block), block>>>(cell_size, volume, points, colors);
     cudaSafeCall ( cudaGetLastError () );

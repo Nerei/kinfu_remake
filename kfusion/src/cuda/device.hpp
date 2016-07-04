@@ -112,6 +112,10 @@ namespace kfusion
 
         template<> __kf_device__ ushort2 gmem::LdCs(ushort2* ptr);
         template<> __kf_device__ void gmem::StCs(const ushort2& val, ushort2* ptr);
+        /*
+        template<> __kf_device__ uchar4 gmem::LdCs(uchar4* ptr);
+        template<> __kf_device__ void gmem::StCs(const uchar4& val, uchar4* ptr);
+         */
     }
 }
 
@@ -130,17 +134,35 @@ namespace kfusion
         asm("ld.global.cs.v2.u16 {%0, %1}, [%2];" : "=h"(reinterpret_cast<ushort&>(val.x)), "=h"(reinterpret_cast<ushort&>(val.y)) : _ASM_PTR_(ptr));
         return val;
     }
-
+/*
+    template<> __kf_device__ uchar4 kfusion::device::gmem::LdCs(uchar4* ptr)
+    {
+        uchar4 val;
+        asm("ld.global.cs.v2.u8 {%0, %1, %2, %3}, [%4];" : "=h"(reinterpret_cast<uchar&>(val.x)), "=h"(reinterpret_cast<uchar&>(val.y)), "=h"(reinterpret_cast<uchar&>(val.z)), "=h"(reinterpret_cast<uchar&>(val.w)) : _ASM_PTR_(ptr));
+        return val;
+    }
+*/
     template<> __kf_device__ void kfusion::device::gmem::StCs(const ushort2& val, ushort2* ptr)
     {
         short cx = val.x, cy = val.y;
         asm("st.global.cs.v2.u16 [%0], {%1, %2};" : : _ASM_PTR_(ptr), "h"(reinterpret_cast<ushort&>(cx)), "h"(reinterpret_cast<ushort&>(cy)));
     }
+/*
+    template<> __kf_device__ void kfusion::device::gmem::StCs(const uchar4& val, uchar4* ptr)
+    {
+        uchar cx = val.x, cy = val.y, cz = val.z, cw = val.w;
+        asm("st.global.cs.v2.u8 [%0], {%1, %2, %3, %4};" : : _ASM_PTR_(ptr), cx, cy, cz, cw);
+    }
+    */
     #undef _ASM_PTR_
 
 #else
     template<> __kf_device__ ushort2 kfusion::device::gmem::LdCs(ushort2* ptr) { return *ptr; }
     template<> __kf_device__ void kfusion::device::gmem::StCs(const ushort2& val, ushort2* ptr) { *ptr = val; }
+/*
+    template<> __kf_device__ uchar4 kfusion::device::gmem::LdCs(uchar4* ptr) { return *ptr; }
+    template<> __kf_device__ void kfusion::device::gmem::StCs(const uchar4& val, uchar4* ptr) { *ptr = val; }
+    */
 #endif
 
 

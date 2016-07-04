@@ -108,5 +108,19 @@ void kfusion::cuda::ColorVolume::integrate(const Image& rgb_image,
 void kfusion::cuda::ColorVolume::fetchColors(const DeviceArray<Point>& cloud,
                                              DeviceArray<RGB>& colors) const
 {
-    // @TODO: (Gabriel) Implement! (with corresponding CUDA kernel in color_volume.cu)
+    if (colors.empty ())
+        colors.create (cloud.size());
+
+    DeviceArray<device::Point>& pts = (DeviceArray<device::Point>&)cloud;
+    PtrSz<uchar4> col(reinterpret_cast<uchar4*>(colors.ptr()), colors.size());
+    // DeviceArray<device::Color>& col = (DeviceArray<device::Color>&)colors;
+
+    device::Vec3i dims = device_cast<device::Vec3i>(dims_);
+    device::Vec3f vsz  = device_cast<device::Vec3f>(getVoxelSize());
+    device::Aff3f aff  = device_cast<device::Aff3f>(pose_);
+
+    device::ColorVolume volume((uchar4*)data_.ptr<uchar4>(), dims, vsz, trunc_dist_, max_weight_);
+    device::fetchColors(volume, pts, col);
+
+//    return DeviceArray<Point>((Point*)cloud_buffer.ptr(), size);
 }
