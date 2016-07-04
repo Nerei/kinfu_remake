@@ -108,9 +108,19 @@ struct KinFuApp
   {
       cuda::DeviceArray<Point> cloud = kinfu.tsdf().fetchCloud(cloud_buffer);
       cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
-      cloud.download(cloud_host.ptr<Point>());
-      viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
-      //viz.showWidget("cloud", cv::viz::WPaintedCloud(cloud_host));
+
+      if (kinfu.params().integrate_color) {
+          kinfu.color_volume()->fetchColors(cloud, color_buffer);
+          cv::Mat color_host(1, (int)cloud.size(), CV_8UC4);
+          cloud.download(cloud_host.ptr<Point>());
+          color_buffer.download(color_host.ptr<RGB>());
+          viz.showWidget("cloud", cv::viz::WCloud(cloud_host, color_host));
+      } else
+      {
+          cloud.download(cloud_host.ptr<Point>());
+          viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
+          //viz.showWidget("cloud", cv::viz::WPaintedCloud(cloud_host));
+      }
   }
 
   /**
@@ -143,7 +153,8 @@ struct KinFuApp
               show_raycasted(kinfu);
 
           show_depth(depth);
-          //cv::imshow("Image", image);
+          if (kinfu.params().integrate_color)
+              cv::imshow("Image", image);
 
           if (!interactive_mode_)
               viz.setViewerPose(kinfu.getCameraPose());
@@ -185,6 +196,8 @@ struct KinFuApp
   cuda::Depth depth_device_;
   /**< */
   cuda::DeviceArray<Point> cloud_buffer;
+  /**< */
+  cuda::DeviceArray<RGB> color_buffer;
 };
 
 
@@ -202,7 +215,8 @@ int main (int argc, char* argv[])
   BinSource capture(argv[1], argv[2]);
 
   KinFuParams custom_params = KinFuParams::default_params();
-  custom_params.volume_dims = Vec3i::all(768);
+  custom_params.integrate_color = true;
+  custom_params.volume_dims = Vec3i::all(256);
   custom_params.volume_size = Vec3f::all(0.7f);
   custom_params.volume_pose = Affine3f().translate(Vec3f(-custom_params.volume_size[0]/2, -custom_params.volume_size[1]/2, 0.5f));
   custom_params.intr = Intr(520.89, 520.23, 324.54, 237.553);
