@@ -64,8 +64,6 @@ namespace kfusion
                 int x = blockIdx.x * blockDim.x + threadIdx.x;
                 int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-                printf("integrate");
-
                 if (x >= volume.dims.x || y >= volume.dims.y)
                     return;
 
@@ -162,22 +160,24 @@ namespace kfusion
     {
         __global__ void
         fetchColors_kernel (const float3 cell_size, const ColorVolume &volume,
-                            const PtrSz<Point> &points, PtrSz<uchar4> &colors)
+                            const PtrSz<float4> &points, PtrSz<uchar4> &colors)
         {
             int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-            printf ("fetchColors_kernel \n");
-/*
-            if (idx < points.size)
+            printf ("fetchColors_kernel %d \n", idx);
+
+            int n_pts = points.size;
+            if (idx < n_pts)
             {
-                printf("idx");
-                int3 v;
-                float3 p = *(const float3 *) (points.data + idx);
+                printf("idx\n");
+            }
+            /*    int3 v;
+                float4 p = *(const float4 *) (points.data + idx);
                 v.x = __float2int_rd(p.x / cell_size.x);        // round to negative infinity
                 v.y = __float2int_rd(p.y / cell_size.y);
                 v.z = __float2int_rd(p.z / cell_size.z);
 
-                //uchar4 rgbw = *volume(v.x, v.y, v.z);
+                uchar4 rgbw = *volume(v.x, v.y, v.z);
                 uchar4 *pix = colors.data;
                 if (pix == NULL) {
                     printf ("null\n");
@@ -190,7 +190,7 @@ namespace kfusion
                 // DEBUG PURPOSE
                 //colors[idx] = make_uchar4(255, 0, 0, 0); //bgra
             }
-            */
+ */
         }
     }
 }
@@ -201,7 +201,8 @@ kfusion::device::fetchColors(const ColorVolume& volume, const PtrSz<Point>& poin
     const int block = 256;
 
     // DEBUG PURPOSE
-    printf("[device::fetchColors] Debug: points.size = %d  colors.size = %d", points.size, colors.size);
+    printf("[device::fetchColors] Debug: points.size = %d  colors.size = %d \n",
+           static_cast<int>(points.size), static_cast<int>(colors.size));
 
     if (points.size != colors.size)
         return;

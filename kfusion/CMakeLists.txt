@@ -47,7 +47,7 @@ if(OPENNI_FOUND)
         include/io/capture.hpp)
 endif(OPENNI_FOUND)
 
-include_directories(include src src/cuda)
+include_directories(include include/kfusion/cuda/ src src/cuda)
 
 set(__has_cuda OFF)
 check_cuda(__has_cuda)

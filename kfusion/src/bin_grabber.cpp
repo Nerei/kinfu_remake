@@ -116,8 +116,8 @@ namespace kfusion {
         rgb_image_stream_.read((char*)(&(this->kinect_data_->rgb_frame[i])), 3);
         rgb_image_stream_.read(&alpha, 1);
       }
-      image.create(this->kinect_data_->rgb_frame_height, this->kinect_data_->rgb_frame_width, CV_8UC3);
-      memcpy(image.data, this->kinect_data_->rgb_frame.data(), 3 * rgb_frame_size);
+      image.create(this->kinect_data_->rgb_frame_height, this->kinect_data_->rgb_frame_width, CV_8UC4);
+      memcpy(image.data, this->kinect_data_->rgb_frame.data(), 4 * rgb_frame_size);
 
       success = true;
       ++cur_frame_;

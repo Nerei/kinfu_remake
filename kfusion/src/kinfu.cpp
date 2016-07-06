@@ -232,7 +232,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
         //ScopeTime time("tsdf");
         tsdf_volume_->integrate(dists_, poses_.back(), p.intr);
         if (p.integrate_color) {
-            //color_volume_->integrate(image, dists_, poses_.back(), p.intr);
+            color_volume_->integrate(image, dists_, poses_.back(), p.intr);
         }
     }
 

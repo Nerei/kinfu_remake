@@ -108,7 +108,7 @@ void kfusion::cuda::ColorVolume::integrate(const Image& rgb_image,
 void kfusion::cuda::ColorVolume::fetchColors(const DeviceArray<Point>& cloud,
                                              DeviceArray<RGB>& colors) const
 {
-    if (colors.empty ())
+    if (colors.size() != cloud.size())
         colors.create (cloud.size());
 
     DeviceArray<device::Point>& pts = (DeviceArray<device::Point>&)cloud;
