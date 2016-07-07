@@ -158,21 +158,30 @@ namespace kfusion
 {
     namespace device
     {
-        __global__ void
-        fetchColors_kernel (const float3 cell_size, const ColorVolume &volume,
-                            const PtrSz<float4> &points, PtrSz<uchar4> &colors)
+        struct ColorFetcher
         {
-            int idx = blockIdx.x * blockDim.x + threadIdx.x;
+            ColorVolume volume;
 
-            printf ("fetchColors_kernel %d \n", idx);
+            float3 cell_size;
+            int n_pts;
+            const float4* pts_data;
 
-            int n_pts = points.size;
-            if (idx < n_pts)
+            ColorFetcher(const ColorVolume& volume, float3 cell_size);
+
+            __kf_device__
+            void operator()(PtrSz<Color> colors) const
             {
-                printf("idx\n");
-            }
-            /*    int3 v;
-                float4 p = *(const float4 *) (points.data + idx);
+                int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+                printf ("fetchColors_kernel %d \n", idx);
+
+                if (idx < n_pts)
+                {
+                  printf("idx\n");
+                }
+
+                int3 v;
+                float4 p = *(const float4 *) (pts_data + idx);
                 v.x = __float2int_rd(p.x / cell_size.x);        // round to negative infinity
                 v.y = __float2int_rd(p.y / cell_size.y);
                 v.z = __float2int_rd(p.z / cell_size.z);
@@ -182,16 +191,22 @@ namespace kfusion
                 if (pix == NULL) {
                     printf ("null\n");
                 }
-                //pix[idx] = rgbw; //bgra
+                pix[idx] = rgbw; //bgra
 
                 //uchar4 rgbw = gmem::LdCs(volume(v.x, v.y, v.z));
                 //gmem::StCs(rgbw, colors.data + idx);
 
                 // DEBUG PURPOSE
                 //colors[idx] = make_uchar4(255, 0, 0, 0); //bgra
+
             }
- */
-        }
+        };
+
+        inline ColorFetcher::ColorFetcher(const ColorVolume& _volume, float3 _cell_size)
+        : volume(_volume), cell_size(_cell_size) {}
+
+        __global__ void fetchColors_kernel (const ColorFetcher colorfetcher, PtrSz<Color> colors)
+        {colorfetcher(colors);};
     }
 }
 
@@ -208,7 +223,12 @@ kfusion::device::fetchColors(const ColorVolume& volume, const PtrSz<Point>& poin
         return;
 
     float3 cell_size = make_float3 (volume.voxel_size.x, volume.voxel_size.y, volume.voxel_size.z);
-    fetchColors_kernel<<<divUp (points.size, block), block>>>(cell_size, volume, points, colors);
+
+    ColorFetcher cf(volume, cell_size);
+    cf.n_pts = points.size;
+    cf.pts_data = points.data;
+
+    fetchColors_kernel<<<divUp (points.size, block), block>>>(cf, colors);
     cudaSafeCall ( cudaGetLastError () );
     cudaSafeCall (cudaDeviceSynchronize ());
 };
