@@ -115,12 +115,12 @@ void kfusion::cuda::ColorVolume::fetchColors(const DeviceArray<Point>& cloud,
     PtrSz<uchar4> col(reinterpret_cast<uchar4*>(colors.ptr()), colors.size());
     // DeviceArray<device::Color>& col = (DeviceArray<device::Color>&)colors;
 
+    Affine3f pose_inv = pose_.inv();
+
     device::Vec3i dims = device_cast<device::Vec3i>(dims_);
     device::Vec3f vsz  = device_cast<device::Vec3f>(getVoxelSize());
-    device::Aff3f aff  = device_cast<device::Aff3f>(pose_);
+    device::Aff3f aff_inv  = device_cast<device::Aff3f>(pose_inv);
 
     device::ColorVolume volume((uchar4*)data_.ptr<uchar4>(), dims, vsz, trunc_dist_, max_weight_);
-    device::fetchColors(volume, pts, col);
-
-//    return DeviceArray<Point>((Point*)cloud_buffer.ptr(), size);
+    device::fetchColors(volume, aff_inv, pts, col);
 }

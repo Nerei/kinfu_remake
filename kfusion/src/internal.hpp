@@ -143,7 +143,7 @@ namespace kfusion
         //color volume functions
         void clear_volume(ColorVolume volume);
         void integrate(const Colors& image, const Dists& depth_map, ColorVolume& volume, const Aff3f& aff, const Projector& proj);
-        void fetchColors(const ColorVolume& volume, const PtrSz<Point>& points, PtrSz<Color>& colors);
+        void fetchColors(const ColorVolume& volume, const Aff3f& aff_inv, const PtrSz<Point>& points, PtrSz<Color>& colors);
 
         //image proc functions
         void compute_dists(const Depth& depth, Dists dists, float2 f, float2 c);

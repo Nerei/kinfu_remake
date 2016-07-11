@@ -47,7 +47,7 @@ namespace kfusion
 {
     namespace device
     {
-        texture<uchar4, 2> image_tex(0, cudaFilterModePoint, cudaAddressModeBorder, cudaCreateChannelDescHalf());
+        texture<uchar4, 2> image_tex(0, cudaFilterModePoint, cudaAddressModeBorder);
         texture<float, 2> depth_tex(0, cudaFilterModePoint, cudaAddressModeBorder, cudaCreateChannelDescHalf());
 
         struct ColorIntegrator {
@@ -92,23 +92,23 @@ namespace kfusion
                         {
                             // Read the existing value and weight
                             uchar4 volume_rgbw = *vptr;
-                            int weight_prev = volume_rgbw.w;
+                            uchar weight_prev = volume_rgbw.w;
 
                             // Average with new value and weight
                             uchar4 rgb = tex2D(image_tex, coo.x, coo.y);
 
-                            const float Wrk = 1.f;
-                            float new_x = (volume_rgbw.x * weight_prev + Wrk * rgb.x) / (weight_prev + Wrk);
-                            float new_y = (volume_rgbw.y * weight_prev + Wrk * rgb.y) / (weight_prev + Wrk);
-                            float new_z = (volume_rgbw.z * weight_prev + Wrk * rgb.z) / (weight_prev + Wrk);
+                            uchar Wrk = 1;
+                            uchar new_x = (volume_rgbw.x * weight_prev + Wrk * rgb.x) / (weight_prev + Wrk);
+                            uchar new_y = (volume_rgbw.y * weight_prev + Wrk * rgb.y) / (weight_prev + Wrk);
+                            uchar new_z = (volume_rgbw.z * weight_prev + Wrk * rgb.z) / (weight_prev + Wrk);
 
-                            int weight_new = weight_prev + 1;
+                            uchar weight_new = min(weight_prev + 1, 255);
 
                             uchar4 volume_rgbw_new;
-                            volume_rgbw_new.x = min (255, max (0, __float2int_rn (new_x)));
-                            volume_rgbw_new.y = min (255, max (0, __float2int_rn (new_y)));
-                            volume_rgbw_new.z = min (255, max (0, __float2int_rn (new_z)));
-                            volume_rgbw_new.w = min (volume.max_weight, weight_new);
+                            volume_rgbw_new.x = min(255, new_x);
+                            volume_rgbw_new.y = min(255, new_y);
+                            volume_rgbw_new.z = min(255, new_z);
+                            volume_rgbw_new.w = min(volume.max_weight, weight_new);
 
                             // Write back
                             *vptr = volume_rgbw_new;
@@ -138,7 +138,8 @@ void kfusion::device::integrate(const PtrStepSz<uchar4>& rgb_image,
     image_tex.addressMode[0] = cudaAddressModeBorder;
     image_tex.addressMode[1] = cudaAddressModeBorder;
     image_tex.addressMode[2] = cudaAddressModeBorder;
-    TextureBinder image_binder(rgb_image, image_tex, cudaCreateChannelDescHalf()); (void)image_binder;
+    cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<uchar4>();
+    TextureBinder image_binder(rgb_image, image_tex, channelDesc); (void)image_binder;
 
     depth_tex.filterMode = cudaFilterModePoint;
     depth_tex.addressMode[0] = cudaAddressModeBorder;
@@ -165,6 +166,7 @@ namespace kfusion
             float3 cell_size;
             int n_pts;
             const float4* pts_data;
+            Aff3f aff_inv;
 
             ColorFetcher(const ColorVolume& volume, float3 cell_size);
 
@@ -173,27 +175,19 @@ namespace kfusion
             {
                 int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-                printf ("fetchColors_kernel %d \n", idx);
-
                 if (idx < n_pts)
                 {
-                  printf("idx\n");
-
                   int3 v;
                   float4 p = *(const float4 *) (pts_data + idx);
-                  v.x = __float2int_rd(p.x / cell_size.x);        // round to negative infinity
-                  v.y = __float2int_rd(p.y / cell_size.y);
-                  v.z = __float2int_rd(p.z / cell_size.z);
+                  float3 px = make_float3(p.x, p.y, p.z);
+                  float3 pv = aff_inv * px;
+                  v.x = __float2int_rd(pv.x / cell_size.x);        // round to negative infinity
+                  v.y = __float2int_rd(pv.y / cell_size.y);
+                  v.z = __float2int_rd(pv.z / cell_size.z);
 
                   uchar4 rgbw = *volume(v.x, v.y, v.z);
                   uchar4 *pix = colors.data;
-                  if (pix == NULL) {
-                      printf ("null\n");
-                  }
                   pix[idx] = rgbw; //bgra
-
-                  // DEBUG PURPOSE
-                  //colors[idx] = make_uchar4(255, 0, 0, 0); //bgra
                 }
             }
         };
@@ -207,13 +201,9 @@ namespace kfusion
 }
 
 void
-kfusion::device::fetchColors(const ColorVolume& volume, const PtrSz<Point>& points, PtrSz<Color>& colors)
+kfusion::device::fetchColors(const ColorVolume& volume, const Aff3f& aff_inv, const PtrSz<Point>& points, PtrSz<Color>& colors)
 {
     const int block = 256;
-
-    // DEBUG PURPOSE
-    printf("[device::fetchColors] Debug: points.size = %d  colors.size = %d \n",
-           static_cast<int>(points.size), static_cast<int>(colors.size));
 
     if (points.size != colors.size || points.size == 0)
         return;
@@ -223,6 +213,7 @@ kfusion::device::fetchColors(const ColorVolume& volume, const PtrSz<Point>& poin
     ColorFetcher cf(volume, cell_size);
     cf.n_pts = points.size;
     cf.pts_data = points.data;
+    cf.aff_inv = aff_inv;
 
     fetchColors_kernel<<<divUp (points.size, block), block>>>(cf, colors);
     cudaSafeCall ( cudaGetLastError () );
