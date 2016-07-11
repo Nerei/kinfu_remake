@@ -107,6 +107,10 @@ struct KinFuApp
   void take_cloud(KinFu& kinfu)
   {
       cuda::DeviceArray<Point> cloud = kinfu.tsdf().fetchCloud(cloud_buffer);
+
+      // DEBUG PURPOSE
+      std::cout << cloud.size() << std::endl;
+
       cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
 
       if (kinfu.params().integrate_color) {
@@ -143,18 +147,22 @@ struct KinFuApp
               return std::cout << "Can't grab" << std::endl, false;
 
           depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
+          color_device_.upload(image.data, image.step, image.rows, image.cols);
 
           {
               SampledScopeTime fps(time_ms); (void)fps;
-              has_image = kinfu(depth_device_);
+              if (kinfu.params().integrate_color)
+                  has_image = kinfu(depth_device_, color_device_);
+              else
+                  has_image = kinfu(depth_device_);
           }
 
           if (has_image)
               show_raycasted(kinfu);
 
           show_depth(depth);
-          if (kinfu.params().integrate_color)
-              cv::imshow("Image", image);
+          //if (kinfu.params().integrate_color)
+              //cv::imshow("Image", image);
 
           if (!interactive_mode_)
               viz.setViewerPose(kinfu.getCameraPose());
@@ -194,6 +202,8 @@ struct KinFuApp
   cuda::Image view_device_;
   /**< Depth frame on the GPU */
   cuda::Depth depth_device_;
+  /**< Color frame on the GPU */
+  cuda::Image color_device_;
   /**< */
   cuda::DeviceArray<Point> cloud_buffer;
   /**< */
@@ -216,11 +226,11 @@ int main (int argc, char* argv[])
 
   KinFuParams custom_params = KinFuParams::default_params();
   custom_params.integrate_color = true;
-  custom_params.volume_dims = Vec3i::all(256);
+  custom_params.volume_dims = Vec3i::all(64);
   custom_params.volume_size = Vec3f::all(0.7f);
   custom_params.volume_pose = Affine3f().translate(Vec3f(-custom_params.volume_size[0]/2, -custom_params.volume_size[1]/2, 0.5f));
   custom_params.intr = Intr(520.89, 520.23, 324.54, 237.553);
-  custom_params.tsdf_trunc_dist = 0.005;
+  custom_params.tsdf_trunc_dist = 0.05;
 
   KinFuApp app (capture, custom_params);
 

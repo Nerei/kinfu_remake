@@ -178,27 +178,23 @@ namespace kfusion
                 if (idx < n_pts)
                 {
                   printf("idx\n");
+
+                  int3 v;
+                  float4 p = *(const float4 *) (pts_data + idx);
+                  v.x = __float2int_rd(p.x / cell_size.x);        // round to negative infinity
+                  v.y = __float2int_rd(p.y / cell_size.y);
+                  v.z = __float2int_rd(p.z / cell_size.z);
+
+                  uchar4 rgbw = *volume(v.x, v.y, v.z);
+                  uchar4 *pix = colors.data;
+                  if (pix == NULL) {
+                      printf ("null\n");
+                  }
+                  pix[idx] = rgbw; //bgra
+
+                  // DEBUG PURPOSE
+                  //colors[idx] = make_uchar4(255, 0, 0, 0); //bgra
                 }
-
-                int3 v;
-                float4 p = *(const float4 *) (pts_data + idx);
-                v.x = __float2int_rd(p.x / cell_size.x);        // round to negative infinity
-                v.y = __float2int_rd(p.y / cell_size.y);
-                v.z = __float2int_rd(p.z / cell_size.z);
-
-                uchar4 rgbw = *volume(v.x, v.y, v.z);
-                uchar4 *pix = colors.data;
-                if (pix == NULL) {
-                    printf ("null\n");
-                }
-                pix[idx] = rgbw; //bgra
-
-                //uchar4 rgbw = gmem::LdCs(volume(v.x, v.y, v.z));
-                //gmem::StCs(rgbw, colors.data + idx);
-
-                // DEBUG PURPOSE
-                //colors[idx] = make_uchar4(255, 0, 0, 0); //bgra
-
             }
         };
 
@@ -219,7 +215,7 @@ kfusion::device::fetchColors(const ColorVolume& volume, const PtrSz<Point>& poin
     printf("[device::fetchColors] Debug: points.size = %d  colors.size = %d \n",
            static_cast<int>(points.size), static_cast<int>(colors.size));
 
-    if (points.size != colors.size)
+    if (points.size != colors.size || points.size == 0)
         return;
 
     float3 cell_size = make_float3 (volume.voxel_size.x, volume.voxel_size.y, volume.voxel_size.z);
