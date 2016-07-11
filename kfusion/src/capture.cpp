@@ -130,6 +130,13 @@ void kfusion::OpenNISource::open (int device)
     {
         impl_->has_image = true;
         rc = impl_->image.SetMapOutputMode (mode);
+        rc = impl_->depth.GetAlternativeViewPointCap().SetViewPoint(impl_->image);
+        if (rc != XN_STATUS_OK)
+        {
+            sprintf(impl_->strError, "Depth alignment failed: %s\n",
+                    xnGetStatusString(rc));
+            REPORT_ERROR (impl_->strError);
+        }
     }
 
     getParams ();
