@@ -36,6 +36,18 @@ struct KinFuApp
         viz.registerKeyboardCallback(KeyboardCallback, this);
     }
 
+    KinFuApp(OpenNISource& source, const KinFuParams& params) : exit_ (false),  iteractive_mode_(false), capture_ (source), pause_(false)
+    {
+        kinfu_ = KinFu::Ptr( new KinFu(params) );
+
+        capture_.setRegistration(true);
+
+        cv::viz::WCube cube(cv::Vec3d::all(0), cv::Vec3d(params.volume_size), true, cv::viz::Color::apricot());
+        viz.showWidget("cube", cube, params.volume_pose);
+        viz.showWidget("coor", cv::viz::WCoordinateSystem(0.1));
+        viz.registerKeyboardCallback(KeyboardCallback, this);
+    }
+
     void show_depth(const cv::Mat& depth)
     {
         cv::Mat display;
@@ -61,9 +73,17 @@ struct KinFuApp
     {
         cuda::DeviceArray<Point> cloud = kinfu.tsdf().fetchCloud(cloud_buffer);
         cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
-        cloud.download(cloud_host.ptr<Point>());
-        viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
-        //viz.showWidget("cloud", cv::viz::WPaintedCloud(cloud_host));
+        if (kinfu.params().integrate_color) {
+            kinfu.color_volume()->fetchColors(cloud, color_buffer);
+            cv::Mat color_host(1, (int)cloud.size(), CV_8UC4);
+            cloud.download(cloud_host.ptr<Point>());
+            color_buffer.download(color_host.ptr<RGB>());
+            viz.showWidget("cloud", cv::viz::WCloud(cloud_host, color_host));
+        } else
+        {
+            cloud.download(cloud_host.ptr<Point>());
+            viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
+        }
     }
 
     bool execute()
@@ -80,17 +100,22 @@ struct KinFuApp
                 return std::cout << "Can't grab" << std::endl, false;
 
             depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
+            color_device_.upload(image.data, image.step, image.rows, image.cols);
 
             {
                 SampledScopeTime fps(time_ms); (void)fps;
-                has_image = kinfu(depth_device_);
+                if (kinfu.params().integrate_color)
+                    has_image = kinfu(depth_device_, color_device_);
+                else
+                    has_image = kinfu(depth_device_);
             }
 
             if (has_image)
                 show_raycasted(kinfu);
 
             show_depth(depth);
-            //cv::imshow("Image", image);
+            if (kinfu.params().integrate_color)
+                cv::imshow("Image", image);
 
             if (!iteractive_mode_)
                 viz.setViewerPose(kinfu.getCameraPose());
@@ -120,7 +145,9 @@ struct KinFuApp
     cv::Mat view_host_;
     cuda::Image view_device_;
     cuda::Depth depth_device_;
+    cuda::Image color_device_;
     cuda::DeviceArray<Point> cloud_buffer;
+    cuda::DeviceArray<RGB> color_buffer;
 };
 
 
@@ -145,7 +172,10 @@ int main (int argc, char* argv[])
     //capture.open("d:/onis/20111013-224551.oni");
     //capture.open("d:/onis/20111013-224719.oni");
 
-    KinFuApp app (capture);
+    KinFuParams custom_params = KinFuParams::default_params();
+    custom_params.integrate_color = true;
+
+    KinFuApp app (capture, custom_params);
 
     // executing
     try { app.execute (); }
