@@ -19,6 +19,7 @@ namespace kfusion {
 class KF_EXPORTS BinSource {
  public:
   typedef kfusion::PixelRGB RGB24;
+  typedef kfusion::RGB RGB32;
 
   struct KinectData {
     /**< Depth map width */
@@ -36,7 +37,7 @@ class KF_EXPORTS BinSource {
     /**< Size in bytes of one frame in the binary file */
     int rgb_block_size;
     /**< Array of memory for the rgb image */
-    std::vector<PixelRGB> rgb_frame;
+    std::vector<RGB32> rgb_frame;
 
     /**
      * @name  KinectData

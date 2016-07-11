@@ -9,9 +9,6 @@
 
 #include <iostream>
 #include <kfusion/kinfu.hpp>
-#include <opencv2/core/core.hpp>
-#include <string>
-#include <vector>
 #include <fstream>
 
 #include "io/bin_grabber.hpp"
@@ -109,13 +106,10 @@ namespace kfusion {
         depth_image_stream_.read((char*)(&(this->kinect_data_->depth_frame[i])), 2);
       }
 
-      char alpha;
       int rgb_frame_size = this->kinect_data_->rgb_frame_width * this->kinect_data_->rgb_frame_height;
       this->kinect_data_->rgb_frame.resize(rgb_frame_size);
-      for (int i=0; i < rgb_frame_size; ++i) {
-        rgb_image_stream_.read((char*)(&(this->kinect_data_->rgb_frame[i])), 3);
-        rgb_image_stream_.read(&alpha, 1);
-      }
+      rgb_image_stream_.read((char*)(&(this->kinect_data_->rgb_frame[0])), 4 * rgb_frame_size);
+
       image.create(this->kinect_data_->rgb_frame_height, this->kinect_data_->rgb_frame_width, CV_8UC4);
       memcpy(image.data, this->kinect_data_->rgb_frame.data(), 4 * rgb_frame_size);
 
