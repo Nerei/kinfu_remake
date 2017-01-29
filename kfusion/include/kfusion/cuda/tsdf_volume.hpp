@@ -38,8 +38,8 @@ namespace kfusion
             float getGradientDeltaFactor() const;
             void setGradientDeltaFactor(float factor);
 
-            Vec3i getGridOrigin() const;
-            void setGridOrigin(const Vec3i& origin);
+            //Vec3i getGridOrigin() const;
+            //void setGridOrigin(const Vec3i& origin);
 
             virtual void clear();
             virtual void applyAffine(const Affine3f& affine);

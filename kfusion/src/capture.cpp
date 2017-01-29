@@ -130,6 +130,13 @@ void kfusion::OpenNISource::open (int device)
     {
         impl_->has_image = true;
         rc = impl_->image.SetMapOutputMode (mode);
+        rc = impl_->depth.GetAlternativeViewPointCap().SetViewPoint(impl_->image);
+        if (rc != XN_STATUS_OK)
+        {
+            sprintf(impl_->strError, "Depth alignment failed: %s\n",
+                    xnGetStatusString(rc));
+            REPORT_ERROR (impl_->strError);
+        }
     }
 
     getParams ();
@@ -162,7 +169,7 @@ void kfusion::OpenNISource::open(const std::string& filename, bool repeat /*= fa
         sprintf (impl_->strError, "Open failed: %s\n", xnGetStatusString (rc));
         REPORT_ERROR (impl_->strError);
     }
-    
+
     impl_->player_.SetRepeat(repeat);
 
     rc = impl_->context.FindExistingNode (XN_NODE_TYPE_DEPTH, impl_->depth);
@@ -231,11 +238,11 @@ bool kfusion::OpenNISource::grab(cv::Mat& depth, cv::Mat& image)
         const XnRGB24Pixel* pImage = impl_->imageMD.RGB24Data ();
         int x = impl_->imageMD.FullXRes ();
         int y = impl_->imageMD.FullYRes ();
-        image.create(y, x, CV_8UC3);
+        image.create(y, x, CV_8UC4);
 
-        cv::Vec3b *dptr = image.ptr<cv::Vec3b>();
+        cv::Vec4b *dptr = image.ptr<cv::Vec4b>();
         for(size_t i = 0; i < image.total(); ++i)
-            dptr[i] = cv::Vec3b(pImage[i].nBlue, pImage[i].nGreen, pImage[i].nRed);
+            dptr[i] = cv::Vec4b(pImage[i].nBlue, pImage[i].nGreen, pImage[i].nRed, 0.0);
     }
     else
     {
