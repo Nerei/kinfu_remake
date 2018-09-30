@@ -70,7 +70,7 @@ void kfusion::cuda::TsdfVolume::clear()
     device::Vec3i dims = device_cast<device::Vec3i>(dims_);
     device::Vec3f vsz  = device_cast<device::Vec3f>(getVoxelSize());
 
-    device::TsdfVolume volume(data_.ptr<ushort2>(), dims, vsz, trunc_dist_, max_weight_);
+    device::TsdfVolume volume(data_.ptr<device::TsdfVolume::elem_type>(), dims, vsz, trunc_dist_, max_weight_);
     device::clear_volume(volume);
 }
 
@@ -84,7 +84,7 @@ void kfusion::cuda::TsdfVolume::integrate(const Dists& dists, const Affine3f& ca
     device::Vec3f vsz  = device_cast<device::Vec3f>(getVoxelSize());
     device::Aff3f aff = device_cast<device::Aff3f>(vol2cam);
 
-    device::TsdfVolume volume(data_.ptr<ushort2>(), dims, vsz, trunc_dist_, max_weight_);
+    device::TsdfVolume volume(data_.ptr<device::TsdfVolume::elem_type>(), dims, vsz, trunc_dist_, max_weight_);
     device::integrate(dists, volume, aff, proj);
 }
 
@@ -102,9 +102,8 @@ void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr&
     device::Vec3i dims = device_cast<device::Vec3i>(dims_);
     device::Vec3f vsz  = device_cast<device::Vec3f>(getVoxelSize());
 
-    device::TsdfVolume volume(data_.ptr<ushort2>(), dims, vsz, trunc_dist_, max_weight_);
+    device::TsdfVolume volume(data_.ptr<device::TsdfVolume::elem_type>(), dims, vsz, trunc_dist_, max_weight_);
     device::raycast(volume, aff, Rinv, reproj, depth, n, raycast_step_factor_, gradient_delta_factor_);
-
 }
 
 void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr& intr, Cloud& points, Normals& normals)
@@ -122,7 +121,7 @@ void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr&
     device::Vec3i dims = device_cast<device::Vec3i>(dims_);
     device::Vec3f vsz  = device_cast<device::Vec3f>(getVoxelSize());
 
-    device::TsdfVolume volume(data_.ptr<ushort2>(), dims, vsz, trunc_dist_, max_weight_);
+    device::TsdfVolume volume(data_.ptr<device::TsdfVolume::elem_type>(), dims, vsz, trunc_dist_, max_weight_);
     device::raycast(volume, aff, Rinv, reproj, p, n, raycast_step_factor_, gradient_delta_factor_);
 }
 
@@ -139,7 +138,7 @@ DeviceArray<Point> kfusion::cuda::TsdfVolume::fetchCloud(DeviceArray<Point>& clo
     device::Vec3f vsz  = device_cast<device::Vec3f>(getVoxelSize());
     device::Aff3f aff  = device_cast<device::Aff3f>(pose_);
 
-    device::TsdfVolume volume((ushort2*)data_.ptr<ushort2>(), dims, vsz, trunc_dist_, max_weight_);
+    device::TsdfVolume volume((device::TsdfVolume::elem_type*)data_.ptr<device::TsdfVolume::elem_type>(), dims, vsz, trunc_dist_, max_weight_);
     size_t size = extractCloud(volume, aff, b);
 
     return DeviceArray<Point>((Point*)cloud_buffer.ptr(), size);
@@ -155,6 +154,6 @@ void kfusion::cuda::TsdfVolume::fetchNormals(const DeviceArray<Point>& cloud, De
     device::Aff3f aff  = device_cast<device::Aff3f>(pose_);
     device::Mat3f Rinv = device_cast<device::Mat3f>(pose_.rotation().inv(cv::DECOMP_SVD));
 
-    device::TsdfVolume volume((ushort2*)data_.ptr<ushort2>(), dims, vsz, trunc_dist_, max_weight_);
+    device::TsdfVolume volume((device::TsdfVolume::elem_type*)data_.ptr<device::TsdfVolume::elem_type>(), dims, vsz, trunc_dist_, max_weight_);
     device::extractNormals(volume, c, aff, Rinv, gradient_delta_factor_, (float4*)normals.ptr());
 }

@@ -265,7 +265,6 @@ namespace kfusion
                 float xl = (x - c.x) * finv.x;
                 float yl = (y - c.y) * finv.y;
                 float lambda = sqrtf (xl * xl + yl * yl + 1);
-
                 dists(y, x) = __float2half_rn(depth(y, x) * lambda * 0.001f); //meters
             }
         }
