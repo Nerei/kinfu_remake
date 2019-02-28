@@ -17,10 +17,10 @@ namespace kfusion
 
             if (x < tsdf.dims.x && y < tsdf.dims.y)
             {
-                ushort2 *beg = tsdf.beg(x, y);
-                ushort2 *end = beg + tsdf.dims.x * tsdf.dims.y * tsdf.dims.z;
+            	TsdfVolume::elem_type *beg = tsdf.beg(x, y);
+            	TsdfVolume::elem_type *end = beg + tsdf.dims.x * tsdf.dims.y * tsdf.dims.z;
 
-                for(ushort2* pos = beg; pos != end; pos = tsdf.zstep(pos))
+                for(TsdfVolume::elem_type* pos = beg; pos != end; pos = tsdf.zstep(pos))
                     *pos = pack_tsdf (0.f, 0);
             }
         }
@@ -109,7 +109,7 @@ namespace kfusion
     }
 }
 
-void kfusion::device::integrate(const PtrStepSz<ushort>& dists, TsdfVolume& volume, const Aff3f& aff, const Projector& proj)
+void kfusion::device::integrate(const Dists& dists, TsdfVolume& volume, const Aff3f& aff, const Projector& proj)
 {
     TsdfIntegrator ti;
     ti.dists_size = make_int2(dists.cols, dists.rows);
@@ -499,7 +499,6 @@ namespace kfusion
                     {
                         int W;
                         float F = fetch(x, y, z, W);
-
                         if (W != 0 && F != 1.f)
                         {
                             V.z = (z + 0.5f) * volume.voxel_size.z;
